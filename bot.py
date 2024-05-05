@@ -49,6 +49,25 @@ async def on_message(message: discord.Message):
         print(e)
 
 
+@bot.tree.command(name="word-status", description="Gives the 10 most used words.")
+async def word_status(interaction: discord.Interaction):
+    cursor = connection.cursor()
+    cursor.execute(
+            """SELECT word, count(*) AS count
+            FROM (
+            SELECT lower(word) AS word
+            FROM user_word
+            ) AS word_counts
+            GROUP BY word
+            ORDER BY count DESC
+            LIMIT 10;"""
+    )
+    rows = cursor.fetchall()
+    connection.commit()
+    res = '\n'.join([f"{row[0]}: {row[1]}" for row in rows])
+    await interaction.response.send_message(res,ephemeral=True)
+
+
 @bot.event
 async def on_member_join(member: discord.Member):
     guild = member.guild
@@ -70,6 +89,11 @@ async def on_member_join(member: discord.Member):
         )
     except Exception as e:
         print(e)
+
+
+@bot.event
+async def on_ready():
+    await bot.tree.sync()
 
 
 bot.run(token=TOKEN)
