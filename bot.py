@@ -64,7 +64,7 @@ async def word_status(interaction: discord.Interaction):
         await interaction.response.send_message(res, ephemeral=True)
     except Exception as e:
         print("Failed to load word status")
-        await interaction.response.send_message("Failed to load word status")
+        await interaction.response.send_message("Failed to load word status",ephemeral=True)
 
 
 @bot.tree.command(
@@ -98,7 +98,7 @@ async def word_status(interaction: discord.Interaction, user: discord.Member):
 @bot.tree.command(name="select-role", description="select from available roles")
 async def select_role(interaction: discord.Interaction):
     view = RoleSelectView(connection)
-    await interaction.response.send_message(view=view)
+    await interaction.response.send_message(view=view,ephemeral=True)
 
 
 @bot.event

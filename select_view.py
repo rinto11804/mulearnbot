@@ -1,10 +1,10 @@
 from discord.ui import View, RoleSelect
 import discord
-import psycopg
+from psycopg.connection import Connection
 
 
 class RoleSelectView(View):
-    def __init__(self, conn: psycopg.connection.Connection):
+    def __init__(self, conn: Connection):
         super().__init__()
         self.conn = conn
 
@@ -31,7 +31,7 @@ class RoleSelectView(View):
                 self.conn.commit()
             elif rows[0][0] == role_name:
                 await interaction.response.send_message(
-                    f"Role:{role_name} is already assigned to you"
+                    f"Role:{role_name} is already assigned to you", ephemeral=True
                 )
                 return
             else:
@@ -45,10 +45,10 @@ class RoleSelectView(View):
                 discord.utils.get(interaction.user.guild.roles, name=role_name)
             )
             await interaction.response.send_message(
-                f"Role:{role_name} is assigned to you"
+                f"Role:{role_name} is assigned to you", ephemeral=True
             )
         except Exception as e:
             print("Failed to select role and assign it")
             await interaction.response.send_message(
-                "Failed to select role and assign it"
+                "Failed to select role and assign it", ephemeral=True
             )
