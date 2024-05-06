@@ -14,33 +14,41 @@ class RoleSelectView(View):
     ):
         role_name = select.values[0].name
         user_id = interaction.user.id
-        cursor = self.conn.cursor()
-        cursor.execute(
-            "SELECT role FROM user_role WHERE discord_id = '%s';", (user_id,)
-        )
-        rows = cursor.fetchall()
-        self.conn.commit()
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute(
+                "SELECT role FROM user_role WHERE discord_id = '%s';", (user_id,)
+            )
+            rows = cursor.fetchall()
+            self.conn.commit()
 
-        if len(rows) == 0:
-            cursor = self.conn.cursor()
-            cursor.execute(
-                "INSERT INTO user_role(discord_id, role) VALUES ('%s', %s);",
-                (user_id, role_name),
+            if len(rows) == 0:
+                cursor = self.conn.cursor()
+                cursor.execute(
+                    "INSERT INTO user_role(discord_id, role) VALUES ('%s', %s);",
+                    (user_id, role_name),
+                )
+                self.conn.commit()
+            elif rows[0][0] == role_name:
+                await interaction.response.send_message(
+                    f"Role:{role_name} is already assigned to you"
+                )
+                return
+            else:
+                cursor = self.conn.cursor()
+                cursor.execute(
+                    "UPDATE user_role SET role=%s WHERE discord_id = '%s';",
+                    (role_name, user_id),
+                )
+                self.conn.commit()
+            await interaction.user.add_roles(
+                discord.utils.get(interaction.user.guild.roles, name=role_name)
             )
-            self.conn.commit()
-        elif rows[0][0] == role_name:
             await interaction.response.send_message(
-                f"Role:{role_name} is already assigned to you"
+                f"Role:{role_name} is assigned to you"
             )
-            return
-        else:
-            cursor = self.conn.cursor()
-            cursor.execute(
-                "UPDATE user_role SET role=%s WHERE discord_id = '%s';",
-                (role_name, user_id),
+        except Exception as e:
+            print("Failed to select role and assign it")
+            await interaction.response.send_message(
+                "Failed to select role and assign it"
             )
-            self.conn.commit()
-        await interaction.user.add_roles(
-            discord.utils.get(interaction.user.guild.roles, name=role_name)
-        )
-        await interaction.response.send_message(f"Role:{role_name} is assigned to you")
