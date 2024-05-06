@@ -1,20 +1,20 @@
 from typing import Final
 import discord
 from discord.ext import commands
-import os
 from dotenv import load_dotenv
 import psycopg2
+import os
+from select_view import RoleSelectView
 
 
 load_dotenv()
-
 
 TOKEN: Final[str] = os.getenv("BOT_TOKEN")
 WELCOME_CHANNEL_ID: Final[int] = os.getenv("WELCOME_CHANNEL_ID")
 DB_URL: Final[str] = os.getenv("DB_URL")
 
 try:
-    connection = psycopg2.connect(dsn=DB_URL)
+    connection = psycopg2.connect(dsn=DB_URL + "=disable")
 except Exception as e:
     print(e)
 
@@ -53,7 +53,7 @@ async def on_message(message: discord.Message):
 async def word_status(interaction: discord.Interaction):
     cursor = connection.cursor()
     cursor.execute(
-            """SELECT word, count(*) AS count
+        """SELECT word, count(*) AS count
             FROM (
             SELECT lower(word) AS word
             FROM user_word
@@ -64,27 +64,37 @@ async def word_status(interaction: discord.Interaction):
     )
     rows = cursor.fetchall()
     connection.commit()
-    res = '\n'.join([f"{row[0]}: {row[1]}" for row in rows])
-    await interaction.response.send_message(res,ephemeral=True)
+    res = "\n".join([f"{row[0]}: {row[1]}" for row in rows])
+    await interaction.response.send_message(res, ephemeral=True)
 
 
-@bot.tree.command(name="user-status", description=": Gives the 10 most used words by the specified user.")
-async def word_status(interaction: discord.Interaction,user:discord.Member):
+@bot.tree.command(
+    name="user-status",
+    description="Gives the 10 most used words by the specified user.",
+)
+async def word_status(interaction: discord.Interaction, user: discord.Member):
     cursor = connection.cursor()
     cursor.execute(
-             """SELECT word, count(*) AS count
+        """SELECT word, count(*) AS count
             FROM (
             SELECT lower(word) AS word
             FROM user_word WHERE discord_id = '%s'
             ) AS word_counts
             GROUP BY word
             ORDER BY count DESC
-            LIMIT 10;""",(user.id,)
+            LIMIT 10;""",
+        (user.id,),
     )
     rows = cursor.fetchall()
     connection.commit()
-    res = '\n'.join([f"{row[0]}: {row[1]}" for row in rows])
-    await interaction.response.send_message(res,ephemeral=True)
+    res = "\n".join([f"{row[0]}: {row[1]}" for row in rows])
+    await interaction.response.send_message(res, ephemeral=True)
+
+
+@bot.tree.command(name="select-role", description="select from available roles")
+async def select_role(interaction: discord.Interaction):
+    view = RoleSelectView(connection)
+    await interaction.response.send_message(view=view)
 
 
 @bot.event
