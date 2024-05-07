@@ -123,6 +123,13 @@ async def on_member_join(member: discord.Member):
     except Exception as e:
         print(e)
 
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, discord.HTTPException) and error.status == 429:
+        await ctx.send("Woah there! I'm being ratelimited. Please try again in a few seconds.")
+    else:
+        await ctx.send("An error occured. Please try again in a few seconds.")
+        print(f"An error occurred: {error}")
 
 @bot.event
 async def on_ready():
